@@ -19,7 +19,7 @@ Desarrollar un sistema de gestión de préstamos que permita a la biblioteca reg
 | Capa      | Tecnología                                   |
 |-----------|-----------------------------------------------|
 | Backend   | Spring Boot (Java), Spring Web, Spring Data MongoDB, Bean Validation |
-| Base de datos | MongoDB (colecciones: `libros`, `prestamos`, `usuarios`) |
+| Base de datos | MongoDB (colecciones: `usuarios`, `categorias`, `libros`, `ejemplares`, `prestamos`, `multas`, `reservas`) |
 | Frontend  | React (repositorio/etapa separada)            |
 
 > Cambio respecto al planteamiento inicial (Go + Fiber): se migra a **Spring Boot + MongoDB** para el backend. El frontend en React se mantiene sin cambios.
@@ -30,18 +30,14 @@ Desarrollar un sistema de gestión de préstamos que permita a la biblioteca reg
 - [x] Scaffold del proyecto Spring Boot (Maven) con dependencias base: Web, Data MongoDB, Validation, Lombok, DevTools.
 - [x] Configuración de conexión a MongoDB (`application.properties`).
 - [x] Repositorio Git inicializado con 3 ramas: `master`, `staging`, `development`.
-- [ ] Modelamiento de entidades y colecciones (pendiente — ver sección 5).
+- [x] Modelamiento de entidades y colecciones — ver sección 5.
 - [ ] Endpoints REST de catálogo, préstamo/devolución e historial.
 
-## 5. Modelamiento de datos (pendiente de definir)
+## 5. Modelamiento de datos
 
-Borrador inicial de entidades a modelar en la siguiente iteración:
+Definido en [`docs/MODELADO.md`](./MODELADO.md). Resumen: 7 colecciones — `usuarios` (con roles `ADMIN`/`BIBLIOTECARIO`/`SOCIO`), `categorias`, `libros` (catálogo/metadata), `ejemplares` (inventario físico por copia, desacoplado del libro para escalar), `prestamos` (referencia al ejemplar + usuario + bibliotecario que atendió), `multas` y `reservas` (extensiones ya contempladas en el esquema para fases posteriores).
 
-- **Libro**: id, título, autor, ISBN, cantidad total, cantidad disponible.
-- **Usuario**: id, nombre, DNI/código de socio, contacto.
-- **Préstamo**: id, referencia a libro, referencia a usuario, fecha de préstamo, fecha de devolución esperada, fecha de devolución real, estado (activo/devuelto/atrasado).
-
-Esto se formalizará (con relaciones/embedding en MongoDB) antes de escribir los repositorios y controladores.
+Scripts de creación y datos de prueba en [`docs/init-mongo.js`](./init-mongo.js) y [`docs/seed.js`](./seed.js).
 
 ## 6. Flujo de ramas (Git)
 
@@ -55,8 +51,4 @@ Las nuevas funcionalidades se crean como `feature/<nombre>` desde `development`,
 
 ## 7. Próximos pasos
 
-1. Definir el modelamiento final de entidades y colecciones MongoDB.
-2. Implementar catálogo de libros con disponibilidad (GET `/api/libros`).
-3. Implementar registro de préstamo y devolución.
-4. Implementar historial de préstamos por usuario (APF2).
-5. Incorporar Pull Requests, una Release identificable y tablero de gestión de tareas (APF2).
+Ver checklist detallado en [`TODO.md`](../TODO.md).

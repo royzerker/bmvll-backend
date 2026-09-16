@@ -12,9 +12,11 @@ Este repositorio contiene únicamente el **scaffold base** del backend:
 - Dependencias: `spring-boot-starter-webmvc`, `spring-boot-starter-data-mongodb`, `spring-boot-starter-validation`, `lombok`, `devtools`.
 - Conexión a MongoDB configurada en `src/main/resources/application.properties`.
 
-Pendiente (ver [`PLANIFICACION.md`](./PLANIFICACION.md)):
+Modelamiento de datos ya definido en [`docs/MODELADO.md`](./docs/MODELADO.md) (7 colecciones: `usuarios`, `categorias`, `libros`, `ejemplares`, `prestamos`, `multas`, `reservas`), con scripts en [`docs/init-mongo.js`](./docs/init-mongo.js) y [`docs/seed.js`](./docs/seed.js).
 
-- Modelamiento de entidades (Libro, Usuario, Préstamo) y colecciones de MongoDB.
+Pendiente (ver [`docs/PLANIFICACION.md`](./docs/PLANIFICACION.md) y [`TODO.md`](./TODO.md)):
+
+- Entidades Java, repositorios y servicios sobre el modelo ya definido.
 - Endpoints de catálogo, préstamo/devolución e historial.
 - Integración con el frontend en React.
 
