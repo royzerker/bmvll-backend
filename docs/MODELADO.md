@@ -2,226 +2,228 @@
 
 Base de datos: `bmvll_db`
 
+> Convención: nombres de colecciones, campos y valores de enum en **inglés** (para alinear con el código Java). La prosa/documentación de este archivo se mantiene en español.
+
 ## Decisiones de diseño (por qué es escalable)
 
-1. **Catálogo separado de inventario físico**: `libros` guarda solo metadata (título, autor, categoría). Cada copia física es un `ejemplares` independiente con su propio código de inventario y estado. Así se puede rastrear pérdida/daño/reparación por copia, no solo un contador — y agregar más copias de un mismo libro no toca el documento del libro.
-2. **Roles en el usuario desde el inicio**: `usuarios.rol` (`ADMIN`, `BIBLIOTECARIO`, `SOCIO`) evita tener que migrar el esquema cuando se agregue login/autenticación.
-3. **Catálogo de categorías normalizado**: `categorias` es su propia colección (administrable) en vez de un string libre en cada libro — evita inconsistencias ("Novela" vs "novela" vs "Novelas").
-4. **Trazabilidad**: `prestamos` referencia también al `bibliotecarioId` que lo atendió (accountability) y guarda historial de `renovaciones`.
-5. **Extensiones ya contempladas en el esquema**: `multas` (atrasos/daños) y `reservas` (libro sin ejemplares disponibles) — no requieren rediseñar `prestamos` cuando se implementen.
-6. **Auditoría uniforme**: todas las colecciones tienen `fechaRegistro`/`fechaActualizacion`, y las de catálogo tienen `activo` (soft delete) en vez de borrado físico.
+1. **Catálogo separado de inventario físico**: `books` guarda solo metadata (título, autor, categoría). Cada copia física es un `copies` independiente con su propio código de inventario y estado. Así se puede rastrear pérdida/daño/reparación por copia, no solo un contador — y agregar más copias de un mismo libro no toca el documento del libro.
+2. **Roles en el usuario desde el inicio**: `users.role` (`ADMIN`, `LIBRARIAN`, `MEMBER`) evita tener que migrar el esquema cuando se agregue login/autenticación. Staff (`ADMIN`/`LIBRARIAN`) y socios (`MEMBER`) comparten la misma colección — no hay una colección separada para personal.
+3. **Catálogo de categorías normalizado**: `categories` es su propia colección (administrable) en vez de un string libre en cada libro — evita inconsistencias ("Novela" vs "novela" vs "Novelas").
+4. **Trazabilidad**: `loans` referencia también al `librarianId` que lo atendió (accountability) y guarda historial de `renewals`.
+5. **Extensiones ya contempladas en el esquema**: `fines` (atrasos/daños) y `reservations` (libro sin ejemplares disponibles) — no requieren rediseñar `loans` cuando se implementen.
+6. **Auditoría uniforme**: todas las colecciones tienen `createdAt`/`updatedAt`, y las de catálogo tienen `active` (soft delete) en vez de borrado físico.
 
 ## Diagrama de relaciones
 
 ```mermaid
 erDiagram
-    USUARIOS ||--o{ PRESTAMOS : "solicita (usuarioId)"
-    USUARIOS ||--o{ PRESTAMOS : "atiende (bibliotecarioId)"
-    USUARIOS ||--o{ MULTAS : "genera"
-    USUARIOS ||--o{ RESERVAS : "reserva"
-    CATEGORIAS ||--o{ LIBROS : "clasifica"
-    LIBROS ||--o{ EJEMPLARES : "tiene copias"
-    LIBROS ||--o{ RESERVAS : "es reservado"
-    EJEMPLARES ||--o{ PRESTAMOS : "es prestado"
-    PRESTAMOS ||--o| MULTAS : "puede generar"
+    USERS ||--o{ LOANS : "solicita (userId)"
+    USERS ||--o{ LOANS : "atiende (librarianId)"
+    USERS ||--o{ FINES : "genera"
+    USERS ||--o{ RESERVATIONS : "reserva"
+    CATEGORIES ||--o{ BOOKS : "clasifica"
+    BOOKS ||--o{ COPIES : "tiene copias"
+    BOOKS ||--o{ RESERVATIONS : "es reservado"
+    COPIES ||--o{ LOANS : "es prestado"
+    LOANS ||--o| FINES : "puede generar"
 
-    USUARIOS {
+    USERS {
         ObjectId _id
-        string tipoDocumento
-        string numeroDocumento
-        string nombres
-        string apellidos
+        string documentType
+        string documentNumber
+        string firstName
+        string lastName
         string email
-        string telefono
-        object direccion
-        string rol
-        string estado
-        date fechaRegistro
-        date fechaActualizacion
+        string phone
+        object address
+        string role
+        string status
+        date createdAt
+        date updatedAt
     }
-    CATEGORIAS {
+    CATEGORIES {
         ObjectId _id
-        string nombre
-        string descripcion
-        boolean activo
+        string name
+        string description
+        boolean active
     }
-    LIBROS {
+    BOOKS {
         ObjectId _id
-        string titulo
-        array autores
+        string title
+        array authors
         string isbn
-        ObjectId categoriaId FK
-        string editorial
-        int anioPublicacion
-        string idioma
-        string sinopsis
-        boolean activo
-        date fechaRegistro
-        date fechaActualizacion
+        ObjectId categoryId FK
+        string publisher
+        int publicationYear
+        string language
+        string synopsis
+        boolean active
+        date createdAt
+        date updatedAt
     }
-    EJEMPLARES {
+    COPIES {
         ObjectId _id
-        ObjectId libroId FK
-        string codigoInventario
-        string estado
-        string condicion
-        object ubicacion
-        date fechaAdquisicion
+        ObjectId bookId FK
+        string inventoryCode
+        string status
+        string condition
+        object location
+        date acquisitionDate
     }
-    PRESTAMOS {
+    LOANS {
         ObjectId _id
-        ObjectId ejemplarId FK
-        ObjectId libroId FK
-        ObjectId usuarioId FK
-        ObjectId bibliotecarioId FK
-        date fechaPrestamo
-        date fechaDevolucionEsperada
-        date fechaDevolucionReal
-        array renovaciones
-        string estado
-        string observaciones
+        ObjectId copyId FK
+        ObjectId bookId FK
+        ObjectId userId FK
+        ObjectId librarianId FK
+        date loanDate
+        date dueDate
+        date returnDate
+        array renewals
+        string status
+        string notes
     }
-    MULTAS {
+    FINES {
         ObjectId _id
-        ObjectId prestamoId FK
-        ObjectId usuarioId FK
-        decimal monto
-        string motivo
-        string estado
-        date fechaGeneracion
-        date fechaPago
+        ObjectId loanId FK
+        ObjectId userId FK
+        decimal amount
+        string reason
+        string status
+        date generatedAt
+        date paidAt
     }
-    RESERVAS {
+    RESERVATIONS {
         ObjectId _id
-        ObjectId libroId FK
-        ObjectId usuarioId FK
-        date fechaReserva
-        date fechaExpiracion
-        string estado
+        ObjectId bookId FK
+        ObjectId userId FK
+        date reservationDate
+        date expirationDate
+        string status
     }
 ```
 
 ---
 
-## Colección `usuarios`
+## Colección `users`
 
 | Campo               | Tipo     | Requerido | Notas                                                       |
-|---------------------|----------|-----------|--------------------------------------------------------------|
+|---------------------|----------|-----------|----------------------------------------------------------------|
 | `_id`                | ObjectId | auto      |                                                                |
-| `tipoDocumento`      | string   | sí        | enum: `DNI`, `CE`, `PASAPORTE`                                |
-| `numeroDocumento`    | string   | sí        | único junto con `tipoDocumento`                               |
-| `nombres`            | string   | sí        |                                                                |
-| `apellidos`          | string   | sí        |                                                                |
+| `documentType`      | string   | sí        | enum: `DNI`, `CE`, `PASSPORT`                                 |
+| `documentNumber`    | string   | sí        | único junto con `documentType`                                |
+| `firstName`         | string   | sí        |                                                                |
+| `lastName`          | string   | sí        |                                                                |
 | `email`              | string   | sí        | único                                                         |
-| `telefono`           | string   | no        |                                                                |
-| `direccion`          | object   | no        | `{ direccion, distrito, referencia }`                         |
-| `rol`                | string   | sí        | enum: `ADMIN`, `BIBLIOTECARIO`, `SOCIO` — default `SOCIO`     |
-| `estado`             | string   | sí        | enum: `ACTIVO`, `SUSPENDIDO`, `INACTIVO` — default `ACTIVO`   |
+| `phone`             | string   | no        |                                                                |
+| `address`           | object   | no        | `{ street, district, reference }`                              |
+| `role`               | string   | sí        | enum: `ADMIN`, `LIBRARIAN`, `MEMBER` — default `MEMBER`       |
+| `status`             | string   | sí        | enum: `ACTIVE`, `SUSPENDED`, `INACTIVE` — default `ACTIVE`    |
 | `passwordHash`       | string   | no        | reservado para cuando se agregue login (fuera de esta fase)   |
-| `fechaRegistro`      | date     | sí        |                                                                |
-| `fechaActualizacion` | date     | no        |                                                                |
+| `createdAt`          | date     | sí        |                                                                |
+| `updatedAt`          | date     | no        |                                                                |
 
-**Índices:** `{tipoDocumento, numeroDocumento}` único, `email` único, `rol`.
+**Índices:** `{documentType, documentNumber}` único, `email` único, `role`.
 
-## Colección `categorias`
+## Colección `categories`
 
 | Campo         | Tipo    | Requerido | Notas          |
 |---------------|---------|-----------|-----------------|
 | `_id`         | ObjectId| auto      |                 |
-| `nombre`      | string  | sí        | único           |
-| `descripcion` | string  | no        |                 |
-| `activo`      | bool    | sí        | default `true`  |
+| `name`        | string  | sí        | único           |
+| `description` | string  | no        |                 |
+| `active`      | bool    | sí        | default `true`  |
 
-**Índices:** `nombre` único.
+**Índices:** `name` único.
 
-## Colección `libros` (catálogo — metadata, sin conteo de ejemplares)
+## Colección `books` (catálogo — metadata, sin conteo de ejemplares)
 
 | Campo                | Tipo     | Requerido | Notas                                       |
 |----------------------|----------|-----------|-----------------------------------------------|
 | `_id`                | ObjectId | auto      |                                                |
-| `titulo`             | string   | sí        |                                                |
-| `autores`            | array    | sí        | array de strings, permite varios autores      |
+| `title`              | string   | sí        |                                                |
+| `authors`            | array    | sí        | array de strings, permite varios autores      |
 | `isbn`               | string   | sí        | único                                          |
-| `categoriaId`        | ObjectId | sí        | referencia a `categorias._id`                 |
-| `editorial`          | string   | no        |                                                |
-| `anioPublicacion`    | int      | no        |                                                |
-| `idioma`             | string   | no        |                                                |
-| `sinopsis`           | string   | no        |                                                |
-| `activo`             | bool     | sí        | soft delete, default `true`                   |
-| `fechaRegistro`      | date     | sí        |                                                |
-| `fechaActualizacion` | date     | no        |                                                |
+| `categoryId`         | ObjectId | sí        | referencia a `categories._id`                 |
+| `publisher`          | string   | no        |                                                |
+| `publicationYear`    | int      | no        |                                                |
+| `language`           | string   | no        |                                                |
+| `synopsis`           | string   | no        |                                                |
+| `active`             | bool     | sí        | soft delete, default `true`                   |
+| `createdAt`          | date     | sí        |                                                |
+| `updatedAt`          | date     | no        |                                                |
 
-**Disponibilidad ya NO es un campo del libro**: se calcula contando `ejemplares` con `estado = DISPONIBLE` para ese `libroId`. Esto resuelve el problema original (visibilidad de disponibilidad) sin arriesgar que el contador se desincronice del inventario real.
+**Disponibilidad ya NO es un campo del libro**: se calcula contando `copies` con `status = AVAILABLE` para ese `bookId`. Esto resuelve el problema original (visibilidad de disponibilidad) sin arriesgar que el contador se desincronice del inventario real.
 
-**Índices:** `isbn` único, texto en `titulo` + `autores`, `categoriaId`.
+**Índices:** `isbn` único, texto en `title` + `authors`, `categoryId`.
 
-## Colección `ejemplares` (inventario físico — 1 documento por copia)
+## Colección `copies` (inventario físico — 1 documento por copia)
 
 | Campo              | Tipo     | Requerido | Notas                                                                 |
 |--------------------|----------|-----------|-------------------------------------------------------------------------|
 | `_id`              | ObjectId | auto      |                                                                           |
-| `libroId`          | ObjectId | sí        | referencia a `libros._id`                                                |
-| `codigoInventario` | string   | sí        | único (código físico/etiqueta del ejemplar)                             |
-| `estado`           | string   | sí        | enum: `DISPONIBLE`, `PRESTADO`, `RESERVADO`, `EN_REPARACION`, `PERDIDO`, `DE_BAJA` |
-| `condicion`        | string   | no        | enum: `NUEVO`, `BUENO`, `REGULAR`, `DETERIORADO`                        |
-| `ubicacion`        | object   | no        | `{ sede, estante }` — ya soporta múltiples sedes a futuro               |
-| `fechaAdquisicion` | date     | no        |                                                                           |
+| `bookId`           | ObjectId | sí        | referencia a `books._id`                                                 |
+| `inventoryCode`    | string   | sí        | único (código físico/etiqueta del ejemplar)                             |
+| `status`           | string   | sí        | enum: `AVAILABLE`, `LOANED`, `RESERVED`, `IN_REPAIR`, `LOST`, `WITHDRAWN` |
+| `condition`        | string   | no        | enum: `NEW`, `GOOD`, `FAIR`, `DAMAGED`                                   |
+| `location`         | object   | no        | `{ branch, shelf }` — ya soporta múltiples sedes a futuro                |
+| `acquisitionDate`  | date     | no        |                                                                           |
 
-**Índices:** `codigoInventario` único, `libroId`, `{libroId, estado}` (para contar disponibilidad rápido), `estado`.
+**Índices:** `inventoryCode` único, `bookId`, `{bookId, status}` (para contar disponibilidad rápido), `status`.
 
-## Colección `prestamos`
+## Colección `loans`
 
 | Campo                     | Tipo     | Requerido | Notas                                                              |
 |---------------------------|----------|-----------|-----------------------------------------------------------------------|
 | `_id`                     | ObjectId | auto      |                                                                         |
-| `ejemplarId`              | ObjectId | sí        | referencia a `ejemplares._id` (la copia física exacta prestada)       |
-| `libroId`                 | ObjectId | sí        | denormalizado desde el ejemplar, para listar/filtrar sin join extra   |
-| `usuarioId`               | ObjectId | sí        | referencia al socio que se lleva el libro                             |
-| `bibliotecarioId`         | ObjectId | sí        | referencia al usuario (rol `BIBLIOTECARIO`/`ADMIN`) que lo registró   |
-| `fechaPrestamo`           | date     | sí        |                                                                         |
-| `fechaDevolucionEsperada` | date     | sí        | el campo que faltaba en el cuaderno físico                            |
-| `fechaDevolucionReal`     | date     | no        | `null` mientras esté activo                                           |
-| `renovaciones`            | array    | no        | `[{ fecha, nuevaFechaDevolucionEsperada }]` — historial de renovaciones |
-| `estado`                  | string   | sí        | enum: `ACTIVO`, `DEVUELTO`, `ATRASADO`, `PERDIDO`                     |
-| `observaciones`           | string   | no        |                                                                         |
+| `copyId`                  | ObjectId | sí        | referencia a `copies._id` (la copia física exacta prestada)           |
+| `bookId`                  | ObjectId | sí        | denormalizado desde el ejemplar, para listar/filtrar sin join extra   |
+| `userId`                  | ObjectId | sí        | referencia al socio que se lleva el libro                             |
+| `librarianId`             | ObjectId | sí        | referencia al usuario (rol `LIBRARIAN`/`ADMIN`) que lo registró       |
+| `loanDate`                | date     | sí        |                                                                         |
+| `dueDate`                 | date     | sí        | el campo que faltaba en el cuaderno físico                            |
+| `returnDate`              | date     | no        | `null` mientras esté activo                                           |
+| `renewals`                | array    | no        | `[{ date, newDueDate }]` — historial de renovaciones                   |
+| `status`                  | string   | sí        | enum: `ACTIVE`, `RETURNED`, `OVERDUE`, `LOST`                         |
+| `notes`                   | string   | no        |                                                                         |
 
-**Índices:** `usuarioId`, `ejemplarId`, `estado`, `{usuarioId, estado}` (saber al instante si un socio tiene préstamos pendientes).
+**Índices:** `userId`, `copyId`, `status`, `{userId, status}` (saber al instante si un socio tiene préstamos pendientes).
 
-## Colección `multas` (atrasos / daños — extensión ya contemplada)
+## Colección `fines` (atrasos / daños — extensión ya contemplada)
 
 | Campo             | Tipo     | Requerido | Notas                                          |
-|-------------------|----------|-----------|---------------------------------------------------|
+|-------------------|----------|-----------|-----------------------------------------------------|
 | `_id`             | ObjectId | auto      |                                                     |
-| `prestamoId`      | ObjectId | sí        | referencia a `prestamos._id`                       |
-| `usuarioId`       | ObjectId | sí        | denormalizado para consultar multas por socio      |
-| `monto`           | decimal  | sí        |                                                     |
-| `motivo`          | string   | sí        | enum: `ATRASO`, `PERDIDA`, `DANIO`                 |
-| `estado`          | string   | sí        | enum: `PENDIENTE`, `PAGADO`, `CONDONADO`           |
-| `fechaGeneracion` | date     | sí        |                                                     |
-| `fechaPago`       | date     | no        |                                                     |
+| `loanId`          | ObjectId | sí        | referencia a `loans._id`                            |
+| `userId`          | ObjectId | sí        | denormalizado para consultar multas por socio      |
+| `amount`          | decimal  | sí        |                                                     |
+| `reason`          | string   | sí        | enum: `LATE_RETURN`, `LOST`, `DAMAGE`              |
+| `status`          | string   | sí        | enum: `PENDING`, `PAID`, `WAIVED`                  |
+| `generatedAt`     | date     | sí        |                                                     |
+| `paidAt`          | date     | no        |                                                     |
 
-**Índices:** `usuarioId`, `{usuarioId, estado}`, `prestamoId`.
+**Índices:** `userId`, `{userId, status}`, `loanId`.
 
-## Colección `reservas` (libro sin ejemplares disponibles — extensión ya contemplada)
+## Colección `reservations` (libro sin ejemplares disponibles — extensión ya contemplada)
 
 | Campo             | Tipo     | Requerido | Notas                                                          |
-|-------------------|----------|-----------|-------------------------------------------------------------------|
+|-------------------|----------|-----------|---------------------------------------------------------------------|
 | `_id`             | ObjectId | auto      |                                                                     |
-| `libroId`         | ObjectId | sí        | referencia a `libros._id`                                          |
-| `usuarioId`       | ObjectId | sí        | referencia a `usuarios._id`                                        |
-| `fechaReserva`    | date     | sí        |                                                                     |
-| `fechaExpiracion` | date     | sí        | si nadie la reclama antes de esta fecha, pasa a `EXPIRADA`         |
-| `estado`          | string   | sí        | enum: `PENDIENTE`, `NOTIFICADA`, `CONVERTIDA`, `CANCELADA`, `EXPIRADA` |
+| `bookId`          | ObjectId | sí        | referencia a `books._id`                                           |
+| `userId`          | ObjectId | sí        | referencia a `users._id`                                           |
+| `reservationDate` | date     | sí        |                                                                     |
+| `expirationDate`  | date     | sí        | si nadie la reclama antes de esta fecha, pasa a `EXPIRED`          |
+| `status`          | string   | sí        | enum: `PENDING`, `NOTIFIED`, `CONVERTED`, `CANCELLED`, `EXPIRED`   |
 
-**Índices:** `{libroId, estado}`, `usuarioId`.
+**Índices:** `{bookId, status}`, `userId`.
 
 ---
 
 ## Reglas de negocio (a implementar en el servicio, no en la BD)
 
-1. **Registrar préstamo**: buscar un `ejemplar` con `libroId` dado y `estado = DISPONIBLE` → marcarlo `PRESTADO` → crear `prestamo` (`estado = ACTIVO`) con `ejemplarId` + `libroId` denormalizado.
-2. **Registrar devolución**: ubicar el `prestamo` activo → `fechaDevolucionReal = now`, `estado = DEVUELTO` → el `ejemplar` vuelve a `DISPONIBLE` (o `EN_REPARACION`/`PERDIDO` según condición al devolver).
-3. **Disponibilidad de un libro** = `count(ejemplares donde libroId = X y estado = DISPONIBLE) > 0`.
-4. **Estado `ATRASADO`**: se calcula cuando `estado = ACTIVO` y `fechaDevolucionEsperada < hoy`. En esta fase se calcula al leer (query); un job programado que lo persista y genere `multas` automáticamente queda para una fase posterior.
-5. **Reserva** (fase posterior): si no hay ejemplares `DISPONIBLE`, el socio puede crear una `reserva`; al devolverse un ejemplar, se prioriza la reserva más antigua antes de dejarlo `DISPONIBLE` para el público general.
-6. **Historial por usuario**: `db.prestamos.find({ usuarioId })` ordenado por `fechaPrestamo`.
+1. **Registrar préstamo**: buscar un `copy` con `bookId` dado y `status = AVAILABLE` → marcarlo `LOANED` → crear `loan` (`status = ACTIVE`) con `copyId` + `bookId` denormalizado.
+2. **Registrar devolución**: ubicar el `loan` activo → `returnDate = now`, `status = RETURNED` → la `copy` vuelve a `AVAILABLE` (o `IN_REPAIR`/`LOST` según condición al devolver).
+3. **Disponibilidad de un libro** = `count(copies donde bookId = X y status = AVAILABLE) > 0`.
+4. **Estado `OVERDUE`**: se calcula cuando `status = ACTIVE` y `dueDate < hoy`. En esta fase se calcula al leer (query); un job programado que lo persista y genere `fines` automáticamente queda para una fase posterior.
+5. **Reserva** (fase posterior): si no hay copies `AVAILABLE`, el socio puede crear una `reservation`; al devolverse una copia, se prioriza la reserva más antigua antes de dejarla `AVAILABLE` para el público general.
+6. **Historial por usuario**: `db.loans.find({ userId })` ordenado por `loanDate`.

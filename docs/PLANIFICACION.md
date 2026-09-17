@@ -19,7 +19,7 @@ Desarrollar un sistema de gestión de préstamos que permita a la biblioteca reg
 | Capa      | Tecnología                                   |
 |-----------|-----------------------------------------------|
 | Backend   | Spring Boot (Java), Spring Web, Spring Data MongoDB, Bean Validation |
-| Base de datos | MongoDB (colecciones: `usuarios`, `categorias`, `libros`, `ejemplares`, `prestamos`, `multas`, `reservas`) |
+| Base de datos | MongoDB (colecciones: `users`, `categories`, `books`, `copies`, `loans`, `fines`, `reservations`) |
 | Frontend  | React (repositorio/etapa separada)            |
 
 > Cambio respecto al planteamiento inicial (Go + Fiber): se migra a **Spring Boot + MongoDB** para el backend. El frontend en React se mantiene sin cambios.
@@ -35,7 +35,7 @@ Desarrollar un sistema de gestión de préstamos que permita a la biblioteca reg
 
 ## 5. Modelamiento de datos
 
-Definido en [`docs/MODELADO.md`](./MODELADO.md). Resumen: 7 colecciones — `usuarios` (con roles `ADMIN`/`BIBLIOTECARIO`/`SOCIO`), `categorias`, `libros` (catálogo/metadata), `ejemplares` (inventario físico por copia, desacoplado del libro para escalar), `prestamos` (referencia al ejemplar + usuario + bibliotecario que atendió), `multas` y `reservas` (extensiones ya contempladas en el esquema para fases posteriores).
+Definido en [`docs/MODELADO.md`](./MODELADO.md). Resumen: 7 colecciones (nombres y campos en inglés) — `users` (con roles `ADMIN`/`LIBRARIAN`/`MEMBER`), `categories`, `books` (catálogo/metadata), `copies` (inventario físico por copia, desacoplado del libro para escalar), `loans` (referencia a la copia + usuario + bibliotecario que atendió), `fines` y `reservations` (extensiones ya contempladas en el esquema para fases posteriores).
 
 Scripts de creación y datos de prueba en [`docs/init-mongo.js`](./init-mongo.js) y [`docs/seed.js`](./seed.js).
 
