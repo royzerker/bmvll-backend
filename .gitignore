@@ -35,3 +35,10 @@ build/
 .metals/
 .bloop/
 metals.sbt
+
+### Environment ###
+.env
+!.env.example
+
+# AI
+.claude/
