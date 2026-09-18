@@ -1,4 +1,4 @@
-package com.bmvll.backend.domain;
+package com.bmvll.backend.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
