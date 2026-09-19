@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -13,6 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.bmvll.backend.dto.LoginRequest;
 import com.bmvll.backend.dto.LoginResponse;
 import com.bmvll.backend.dto.RegisterRequest;
+import com.bmvll.backend.dto.UserResponse;
 import com.bmvll.backend.model.User;
 import com.bmvll.backend.model.UserRole;
 import com.bmvll.backend.model.UserStatus;
@@ -84,5 +86,11 @@ public class AuthService {
                 .build();
 
         return userRepository.save(user);
+    }
+
+    public UserResponse getCurrentUser(Authentication authentication) {
+        User user = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales inválidas"));
+        return UserResponse.from(user);
     }
 }

@@ -1,9 +1,9 @@
 package com.bmvll.backend.model;
 
 import java.time.Instant;
+import java.util.List;
 
 import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
@@ -16,31 +16,27 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document("users")
-@CompoundIndex(name = "document_unique", def = "{'documentType': 1, 'documentNumber': 1}", unique = true)
-public class User {
+@Document("books")
+public class Book {
 
     @Id
     private String id;
 
-    private DocumentType documentType;
-    private String documentNumber;
-
-    private String firstName;
-    private String lastName;
+    private String title;
+    private List<String> authors;
 
     @Indexed(unique = true)
-    private String email;
-
-    private String phone;
-    private Address address;
+    private String isbn;
 
     @Indexed
-    private UserRole role;
+    private String categoryId;
 
-    private UserStatus status;
+    private String publisher;
+    private Integer publicationYear;
+    private String language;
+    private String synopsis;
 
-    private String passwordHash;
+    private boolean active;
 
     private Instant createdAt;
     private Instant updatedAt;

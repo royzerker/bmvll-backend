@@ -19,4 +19,6 @@ public interface CopyRepository extends MongoRepository<Copy, String> {
     List<Copy> findByBookIdAndStatus(String bookId, CopyStatus status);
 
     long countByBookIdAndStatus(String bookId, CopyStatus status);
+
+    long countByBookId(String bookId);
 }
