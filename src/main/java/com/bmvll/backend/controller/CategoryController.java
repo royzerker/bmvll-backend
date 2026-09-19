@@ -49,4 +49,10 @@ public class CategoryController {
     public CategoryResponse update(@PathVariable String id, @Valid @RequestBody CategoryRequest request) {
         return CategoryResponse.from(categoryService.update(id, request));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable String id) {
+        categoryService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
 }
