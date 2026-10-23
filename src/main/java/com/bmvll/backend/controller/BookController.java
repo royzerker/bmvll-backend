@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.RequestParam;
 import com.bmvll.backend.dto.BookResponse;
 import com.bmvll.backend.service.BookService;
 
@@ -26,6 +26,10 @@ public class BookController {
         return bookService.findAll();
     }
 
+    @GetMapping("/search")
+    public List<BookResponse> search(@RequestParam String title) {
+        return bookService.searchByTitle(title);
+    }
     @GetMapping("/{id}")
     public BookResponse get(@PathVariable String id) {
         return bookService.findById(id);

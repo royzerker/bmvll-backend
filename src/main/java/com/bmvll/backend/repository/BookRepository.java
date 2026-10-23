@@ -8,4 +8,5 @@ import com.bmvll.backend.model.Book;
 
 public interface BookRepository extends MongoRepository<Book, String> {
     List<Book> findByActiveTrue();
+    List<Book> findByActiveTrueAndTitleContainingIgnoreCase(String title);
 }
