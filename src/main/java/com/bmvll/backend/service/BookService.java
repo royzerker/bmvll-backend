@@ -29,6 +29,15 @@ public class BookService {
                 .toList();
     }
 
+public List<BookResponse> searchByTitle(String title) {
+        if (title == null || title.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El parámetro 'title' es obligatorio");
+        }
+        return bookRepository.findByActiveTrueAndTitleContainingIgnoreCase(title.trim()).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     public BookResponse findById(String id) {
         Book book = bookRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Libro no encontrado"));
