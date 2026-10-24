@@ -40,7 +40,6 @@ public class User {
 
     private UserStatus status;
 
-    /** BCrypt hash. Solo se usa para roles ADMIN/LIBRARIAN por ahora. */
     private String passwordHash;
 
     private Instant createdAt;

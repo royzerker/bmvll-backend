@@ -37,10 +37,12 @@ Checklist de lo que falta implementar en esta primera fase del backend (catálog
 ## 5. Endpoints REST
 - [x] `POST /api/auth/login` — login de `ADMIN`/`LIBRARIAN`, devuelve JWT
 - [x] `POST /api/auth/register` — solo `ADMIN`, crea cuentas `ADMIN`/`LIBRARIAN`
-- [ ] `GET /api/books` — catálogo con disponibilidad calculada (queda público, sin JWT)
+- [x] `GET /api/books` — catálogo con disponibilidad calculada (queda público, sin JWT)
 - [ ] `POST /api/loans` — registrar préstamo (requiere JWT `ADMIN`/`LIBRARIAN`)
 - [ ] `PATCH /api/loans/{id}/return` — registrar devolución (requiere JWT `ADMIN`/`LIBRARIAN`)
 - [ ] `GET /api/users/{id}/loans` — historial (APF2, pero puede dejarse listo si el modelo ya lo soporta)
+- [ ] `GET /api/books` — catálogo con disponibilidad calculada (queda público, sin JWT)
+- [x] `GET /api/books/search?title=` — búsqueda por título (APF2)
 
 ## 6. Seguridad / roles
 - [x] Modelo ya soporta roles (`users.role`) y tiene `passwordHash` reservado.
@@ -59,3 +61,4 @@ Checklist de lo que falta implementar en esta primera fase del backend (catálog
 - Pull Requests como flujo de integración
 - Release identificable
 - Tablero de gestión de tareas
+

@@ -2,6 +2,8 @@ package com.bmvll.backend.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -30,7 +32,11 @@ public class AuthController {
         return authService.login(request);
     }
 
-    /** Solo ADMIN (ver SecurityConfig) — crea cuentas ADMIN/LIBRARIAN adicionales. */
+    @GetMapping("/me")
+    public UserResponse me(Authentication authentication) {
+        return authService.getCurrentUser(authentication);
+    }
+
     @PostMapping("/register")
     public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
         var created = authService.register(request);

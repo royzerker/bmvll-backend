@@ -19,7 +19,6 @@ public class CategoryService {
         this.categoryRepository = categoryRepository;
     }
 
-    /** Solo categorías activas (soft delete, ver docs/MODELADO.md). */
     public List<Category> findAll() {
         return categoryRepository.findByActiveTrue();
     }
@@ -57,7 +56,6 @@ public class CategoryService {
         return categoryRepository.save(category);
     }
 
-    /** Baja lógica: no se borra el documento, solo se marca active = false. */
     public void delete(String id) {
         Category category = findById(id);
         category.setActive(false);
