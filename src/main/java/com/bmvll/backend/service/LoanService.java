@@ -38,6 +38,11 @@ public class LoanService {
         return loanRepository.findByUserIdOrderByLoanDateDesc(userId);
     }
 
+    /** Activos (incluye los vencidos, que se marcan OVERDUE al responder), primero los que vencen antes. */
+    public List<Loan> findActive() {
+        return loanRepository.findByStatusOrderByDueDateAsc(LoanStatus.ACTIVE);
+    }
+
     /** Presta el primer ejemplar AVAILABLE del libro; {@code librarianEmail} es el usuario autenticado. */
     public Loan create(LoanRequest request, String librarianEmail) {
         User member = userRepository.findById(request.userId())
