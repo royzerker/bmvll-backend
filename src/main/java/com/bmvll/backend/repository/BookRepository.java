@@ -10,4 +10,6 @@ public interface BookRepository extends MongoRepository<Book, String> {
     List<Book> findByActiveTrue();
     List<Book> findByActiveTrueAndTitleContainingIgnoreCase(String title);
     boolean existsByIsbn(String isbn);
+
+    boolean existsByTitleIgnoreCase(String title);
 }
