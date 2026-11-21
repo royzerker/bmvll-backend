@@ -9,10 +9,12 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import com.bmvll.backend.model.Book;
@@ -21,14 +23,20 @@ import com.bmvll.backend.model.Copy;
 import com.bmvll.backend.model.CopyCondition;
 import com.bmvll.backend.model.CopyStatus;
 import com.bmvll.backend.model.Location;
+import com.bmvll.backend.model.User;
+import com.bmvll.backend.model.UserRole;
+import com.bmvll.backend.model.UserStatus;
 import com.bmvll.backend.repository.BookRepository;
 import com.bmvll.backend.repository.CategoryRepository;
 import com.bmvll.backend.repository.CopyRepository;
+import com.bmvll.backend.repository.UserRepository;
 
 /**
  * Carga el catálogo público (categorías, libros y ejemplares) para tener datos de prueba en una base nueva.
  * Se activa con SEED_ENABLED=true y es idempotente: solo agrega lo que falta (categoría por nombre,
  * libro por ISBN o título), así que se puede dejar activo en cada arranque.
+ * También crea dos cuentas de staff de prueba (ADMIN y LIBRARIAN) con la contraseña de SEED_USER_PASSWORD;
+ * sin esa variable no crea usuarios (la contraseña no va en el código porque el repo es público).
  * No crea socios ni ningún dato personal.
  *
  * Los ISBN son sintéticos (prefijo 978-612-999, con dígito de control válido): sirven como clave única
@@ -42,6 +50,12 @@ public class CatalogSeedRunner implements ApplicationRunner {
     private static final Logger log = LoggerFactory.getLogger(CatalogSeedRunner.class);
     private static final String BRANCH = "Sede Central - Villa El Salvador";
     private static final Instant ACQUIRED = LocalDate.of(2026, 3, 2).atStartOfDay().toInstant(ZoneOffset.UTC);
+
+    private record SeedUser(String email, String firstName, String lastName, UserRole role) {}
+
+    private static final List<SeedUser> USERS = List.of(
+            new SeedUser("admin@bmvll.pe", "Administrador", "Demo", UserRole.ADMIN),
+            new SeedUser("bibliotecario@bmvll.pe", "Bibliotecario", "Demo", UserRole.LIBRARIAN));
 
     private record SeedCategory(String code, String name, String description) {}
 
@@ -126,16 +140,54 @@ public class CatalogSeedRunner implements ApplicationRunner {
     private final CategoryRepository categoryRepository;
     private final BookRepository bookRepository;
     private final CopyRepository copyRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final String userPassword;
 
     public CatalogSeedRunner(CategoryRepository categoryRepository, BookRepository bookRepository,
-            CopyRepository copyRepository) {
+            CopyRepository copyRepository, UserRepository userRepository, PasswordEncoder passwordEncoder,
+            @Value("${app.seed.user-password:}") String userPassword) {
         this.categoryRepository = categoryRepository;
         this.bookRepository = bookRepository;
         this.copyRepository = copyRepository;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.userPassword = userPassword;
     }
 
     @Override
     public void run(ApplicationArguments args) {
+        seedUsers();
+        seedCatalog();
+    }
+
+    private void seedUsers() {
+        if (userPassword.isBlank()) {
+            log.info("Seed de usuarios omitido: SEED_USER_PASSWORD no está definida");
+            return;
+        }
+        int created = 0;
+        for (SeedUser u : USERS) {
+            if (userRepository.existsByEmail(u.email())) {
+                continue;
+            }
+            Instant now = Instant.now();
+            userRepository.save(User.builder()
+                    .firstName(u.firstName())
+                    .lastName(u.lastName())
+                    .email(u.email())
+                    .passwordHash(passwordEncoder.encode(userPassword))
+                    .role(u.role())
+                    .status(UserStatus.ACTIVE)
+                    .createdAt(now)
+                    .updatedAt(now)
+                    .build());
+            created++;
+        }
+        log.info("Seed de usuarios: {} cuentas de staff nuevas", created);
+    }
+
+    private void seedCatalog() {
         int newCategories = 0;
         int newBooks = 0;
         int newCopies = 0;
