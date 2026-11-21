@@ -1,36 +1,37 @@
 # bmvll-backend
 
-API REST del sistema de gestión de préstamos de la **Biblioteca Municipal Mario Vargas Llosa** (Villa El Salvador).
+![CI](https://github.com/royzerker/bmvll-backend/actions/workflows/ci.yml/badge.svg)
 
-Backend construido con **Spring Boot** + **MongoDB**, expone los endpoints que consumirá el frontend en **React**.
+API REST del sistema de gestión de préstamos de la Biblioteca Municipal Mario Vargas Llosa. Spring Boot 4 + MongoDB.
 
-## Estado actual (setup inicial)
+## Estado del proyecto
+Versión candidata para la etapa final. Incluye: login con JWT (ADMIN/LIBRARIAN), categorías, catálogo y búsqueda de libros, inventario de copias, préstamos/devoluciones y miembros. Pendiente: frontend en React.
 
-Este repositorio contiene únicamente el **scaffold base** del backend:
-
-- Proyecto Spring Boot generado con Spring Initializr (Maven).
-- Dependencias: `spring-boot-starter-webmvc`, `spring-boot-starter-data-mongodb`, `spring-boot-starter-validation`, `lombok`, `devtools`.
-- Conexión a MongoDB configurada en `src/main/resources/application.properties`.
-
-Modelamiento de datos ya definido en [`docs/MODELADO.md`](./docs/MODELADO.md) (7 colecciones, nombres y campos en inglés: `users`, `categories`, `books`, `copies`, `loans`, `fines`, `reservations`).
-
-Pendiente (ver [`docs/PLANIFICACION.md`](./docs/PLANIFICACION.md) y [`TODO.md`](./TODO.md)):
-
-- Entidades Java, repositorios y servicios sobre el modelo ya definido.
-- Endpoints de catálogo, préstamo/devolución e historial.
-- Integración con el frontend en React.
+## Entorno desplegado
+[URL de la nube, por ejemplo https://bmvll-backend.onrender.com/api/books]
 
 ## Requisitos
+Java 17+, Maven (o `./mvnw`) y una base MongoDB (local o Atlas).
 
-- Java 17+
-- Maven (o usar el wrapper `./mvnw`)
-- MongoDB corriendo en `localhost:27017` (o ajustar `spring.data.mongodb.uri`)
+## Variables de entorno
+Copia `.env.example` a `.env` y completa:
+`MONGODB_URI`, `JWT_SECRET`, `JWT_EXPIRATION_MS`, `BOOTSTRAP_ADMIN_EMAIL`, `BOOTSTRAP_ADMIN_PASSWORD`.
 
 ## Ejecutar en local
+    ./mvnw spring-boot:run
 
-```bash
-./mvnw spring-boot:run
-```
+## Pruebas
+    ./mvnw test
+
+## Docker
+    docker build -t bmvll-backend .
+    docker run -p 8080:8080 --env-file .env bmvll-backend
+
+## CI/CD
+- **CI** (`.github/workflows/ci.yml`): compila y ejecuta las pruebas en cada push y Pull Request.
+- **Release** (`.github/workflows/release.yml`): al crear un tag `v*`, publica el `.jar` en GitHub Releases.
+- **Despliegue**: automático en [plataforma] al integrar en `master`.
+
 
 ## Flujo de ramas
 
