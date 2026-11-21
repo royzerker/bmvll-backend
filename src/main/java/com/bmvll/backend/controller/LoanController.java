@@ -32,10 +32,12 @@ public class LoanController {
         this.loanService = loanService;
     }
 
+    /** Con {@code userId}: historial del socio. Sin él: todos los préstamos activos. */
     @GetMapping
-    public List<LoanResponse> listByUser(@RequestParam String userId) {
+    public List<LoanResponse> list(@RequestParam(required = false) String userId) {
         Instant now = Instant.now();
-        return loanService.findByUserId(userId).stream().map(loan -> LoanResponse.from(loan, now)).toList();
+        var loans = userId != null ? loanService.findByUserId(userId) : loanService.findActive();
+        return loans.stream().map(loan -> LoanResponse.from(loan, now)).toList();
     }
 
     @PostMapping

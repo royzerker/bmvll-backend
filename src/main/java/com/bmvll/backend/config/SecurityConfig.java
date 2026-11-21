@@ -43,6 +43,8 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // /error recibe el forward de ResponseStatusException; sin esto todo error sale como 401
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/books/**", "/api/categories/**").permitAll()
                         .requestMatchers("/api/auth/register").hasRole("ADMIN")
