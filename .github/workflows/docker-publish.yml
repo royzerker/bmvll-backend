@@ -1,0 +1,99 @@
+name: Docker publish
+
+# Construye la imagen, la sube a GitHub Container Registry y actualiza el contenedor en Ghost.
+# master → tags latest + sha; tag v* → además la versión (v0.3.0 → 0.3.0).
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE: ghcr.io/royzerker/bmvll-backend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Mismo secreto de prueba que ci.yml.
+      JWT_SECRET: ci-test-secret-key-at-least-256-bits-long-for-hmac-sha-algorithm
+    steps:
+      - uses: actions/checkout@v4
+
+      # El Dockerfile salta las pruebas: se corren aquí para no publicar una imagen rota.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+      - name: Compilar y ejecutar pruebas
+        run: mvn -B verify
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+            type=sha,format=long,prefix=
+            type=semver,pattern={{version}}
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/master' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment:
+      name: ghost
+      url: https://bmvll.razorstack.dev/swagger-ui/index.html
+    env:
+      DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+      DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+      DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+      DEPLOY_STACK_DIR: ${{ secrets.DEPLOY_STACK_DIR }}
+    steps:
+      # Descarga la imagen nueva en Ghost y reinicia solo este contenedor.
+      # Secrets: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, DEPLOY_STACK_DIR (carpeta con el
+      # docker-compose.yml de bmvll). Sin ellos la imagen se publica igual y este paso se salta.
+      - name: Actualizar el contenedor
+        if: env.DEPLOY_HOST != '' && env.DEPLOY_SSH_KEY != '' && env.DEPLOY_STACK_DIR != ''
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_deploy
+          chmod 600 ~/.ssh/id_deploy
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          ssh -i ~/.ssh/id_deploy "$DEPLOY_USER@$DEPLOY_HOST" \
+            "cd '$DEPLOY_STACK_DIR' && docker compose pull api && docker compose up -d api && (docker image prune -f || true)"
+
+      - name: Verificar que la API responde
+        if: env.DEPLOY_HOST != '' && env.DEPLOY_SSH_KEY != '' && env.DEPLOY_STACK_DIR != ''
+        run: |
+          for i in $(seq 1 20); do
+            # Se revisa el contenido, no solo el 200: si nginx cae al sitio por defecto también responde 200.
+            if curl -sf https://bmvll.razorstack.dev/v3/api-docs | grep -q '"title":"BMVLL API"'; then
+              echo "intento $i: API arriba"; exit 0
+            fi
+            echo "intento $i: aún no responde"
+            sleep 6
+          done
+          echo "::error::La API no respondió 200 tras el deploy"; exit 1
+
+      - name: Deploy omitido
+        if: env.DEPLOY_HOST == '' || env.DEPLOY_SSH_KEY == '' || env.DEPLOY_STACK_DIR == ''
+        run: echo "::warning::Faltan los secrets de deploy — la imagen se publicó pero Ghost no se actualizó."
