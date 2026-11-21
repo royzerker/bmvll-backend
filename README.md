@@ -8,7 +8,9 @@ API REST del sistema de gestión de préstamos de la Biblioteca Municipal Mario 
 Versión candidata para la etapa final. Incluye: login con JWT (ADMIN/LIBRARIAN), categorías, catálogo y búsqueda de libros, inventario de copias, préstamos/devoluciones y miembros. Pendiente: frontend en React.
 
 ## Entorno desplegado
-URL de la nube: https://bmvll-backend.onrender.com/api/books
+URL de la nube: https://bmvll.razorstack.dev/api/books
+
+Servidor propio (droplet Ghost, DigitalOcean) detrás de nginx con HTTPS. La imagen se publica en `ghcr.io/royzerker/bmvll-backend`.
 
 ## Requisitos
 Java 17+, Maven (o `./mvnw`) y una base MongoDB (local o Atlas).
@@ -30,7 +32,7 @@ Copia `.env.example` a `.env` y completa:
 ## CI/CD
 - **CI** (`.github/workflows/ci.yml`): compila y ejecuta las pruebas en cada push y Pull Request.
 - **Release** (`.github/workflows/release.yml`): al crear un tag `v*`, publica el `.jar` en GitHub Releases.
-- **Despliegue**: automático en Render al integrar en `master`.
+- **Docker publish** (`.github/workflows/docker-publish.yml`): en cada push a `master` corre las pruebas, publica la imagen en GHCR (`latest`, SHA y versión del tag) y actualiza el contenedor en el servidor por SSH (`docker compose pull && up -d`), luego verifica que la API responda.
 
 
 ## Flujo de ramas
