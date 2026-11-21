@@ -67,6 +67,7 @@ jobs:
       DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
       DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
       DEPLOY_STACK_DIR: ${{ secrets.DEPLOY_STACK_DIR }}
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
     steps:
       # Descarga la imagen nueva en Ghost y reinicia solo este contenedor.
       # Secrets: DEPLOY_HOST, DEPLOY_USER, DEPLOY_SSH_KEY, DEPLOY_STACK_DIR (carpeta con el
@@ -78,8 +79,14 @@ jobs:
           printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/id_deploy
           chmod 600 ~/.ssh/id_deploy
           ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          # Secret MONGODB_URI → línea MONGODB_URI del .env del servidor (va por stdin, no queda en logs
+          # ni en la lista de procesos). Sin el secret se conserva la URI que ya tenga el .env.
+          if [ -n "$MONGODB_URI" ]; then
+            printf '%s\n' "$MONGODB_URI" | ssh -i ~/.ssh/id_deploy "$DEPLOY_USER@$DEPLOY_HOST" \
+              "cd '$DEPLOY_STACK_DIR' && umask 077 && IFS= read -r uri && { grep -v '^MONGODB_URI=' .env 2>/dev/null; printf 'MONGODB_URI=%s\n' \"\$uri\"; } > .env.new && mv .env.new .env"
+          fi
           ssh -i ~/.ssh/id_deploy "$DEPLOY_USER@$DEPLOY_HOST" \
-            "cd '$DEPLOY_STACK_DIR' && docker compose pull api && docker compose up -d api && (docker image prune -f || true)"
+            "cd '$DEPLOY_STACK_DIR' && (git pull -q --ff-only || echo 'git pull omitido') && docker compose pull api && docker compose up -d api && (docker image prune -f || true)"
 
       - name: Verificar que la API responde
         if: env.DEPLOY_HOST != '' && env.DEPLOY_SSH_KEY != '' && env.DEPLOY_STACK_DIR != ''
