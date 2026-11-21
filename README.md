@@ -10,6 +10,8 @@ Versión candidata para la etapa final. Incluye: login con JWT (ADMIN/LIBRARIAN)
 ## Entorno desplegado
 URL de la nube: https://bmvll.razorstack.dev/api/books
 
+Documentación (Swagger UI): https://bmvll.razorstack.dev/swagger-ui/index.html — especificación OpenAPI en `/v3/api-docs`. Para las rutas protegidas: `POST /api/auth/login`, copiar el `token` y pegarlo en **Authorize**.
+
 Servidor propio (droplet Ghost, DigitalOcean) detrás de nginx con HTTPS. La imagen se publica en `ghcr.io/royzerker/bmvll-backend`.
 
 ## Requisitos

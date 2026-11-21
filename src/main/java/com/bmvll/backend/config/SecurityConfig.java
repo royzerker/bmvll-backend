@@ -45,6 +45,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // /error recibe el forward de ResponseStatusException; sin esto todo error sale como 401
                         .requestMatchers("/error").permitAll()
+                        // Documentación pública (Swagger UI + especificación OpenAPI); "/" redirige a ella
+                        .requestMatchers(HttpMethod.GET, "/", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/books/**", "/api/categories/**").permitAll()
                         .requestMatchers("/api/auth/register").hasRole("ADMIN")

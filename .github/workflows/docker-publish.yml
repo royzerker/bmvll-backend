@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     environment:
       name: ghost
-      url: https://bmvll.razorstack.dev/api/books
+      url: https://bmvll.razorstack.dev/swagger-ui/index.html
     env:
       DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
       DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
@@ -85,9 +85,11 @@ jobs:
         if: env.DEPLOY_HOST != '' && env.DEPLOY_SSH_KEY != '' && env.DEPLOY_STACK_DIR != ''
         run: |
           for i in $(seq 1 20); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' https://bmvll.razorstack.dev/api/books || true)
-            echo "intento $i: HTTP $code"
-            [ "$code" = "200" ] && exit 0
+            # Se revisa el contenido, no solo el 200: si nginx cae al sitio por defecto también responde 200.
+            if curl -sf https://bmvll.razorstack.dev/v3/api-docs | grep -q '"title":"BMVLL API"'; then
+              echo "intento $i: API arriba"; exit 0
+            fi
+            echo "intento $i: aún no responde"
             sleep 6
           done
           echo "::error::La API no respondió 200 tras el deploy"; exit 1
